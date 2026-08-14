@@ -56,7 +56,7 @@ const primaryRoute = computed(() => ({ name: user.value ? 'dashboard' : 'signup'
                 </div>
             </div>
 
-            <div class="relative mx-auto w-full max-w-xl">
+            <div id="features" class="relative mx-auto w-full max-w-xl scroll-mt-24">
                 <div class="absolute -inset-5 rounded-[2rem] bg-gradient-to-r from-sky-300/30 to-indigo-400/30 blur-2xl"></div>
                 <div class="relative overflow-hidden rounded-2xl border border-white/80 bg-white shadow-2xl shadow-indigo-200/60">
                     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
