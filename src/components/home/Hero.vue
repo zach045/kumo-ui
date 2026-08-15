@@ -56,7 +56,7 @@ const primaryRoute = computed(() => ({ name: user.value ? 'dashboard' : 'signup'
                 </div>
             </div>
 
-            <div id="features" class="relative mx-auto w-full max-w-xl scroll-mt-24">
+            <div class="relative mx-auto w-full max-w-xl">
                 <div class="absolute -inset-5 rounded-[2rem] bg-gradient-to-r from-sky-300/30 to-indigo-400/30 blur-2xl"></div>
                 <div class="relative overflow-hidden rounded-2xl border border-white/80 bg-white shadow-2xl shadow-indigo-200/60">
                     <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
@@ -108,24 +108,5 @@ const primaryRoute = computed(() => ({ name: user.value ? 'dashboard' : 'signup'
             </div>
         </div>
 
-        <div id="how-it-works" class="relative border-t border-slate-200/70 bg-white/70 px-6 py-8 backdrop-blur">
-            <div class="mx-auto grid max-w-5xl gap-6 text-center sm:grid-cols-3">
-                <div>
-                    <p class="text-sm font-bold text-indigo-600">01</p>
-                    <p class="mt-1 font-semibold text-slate-900">Analyze</p>
-                    <p class="mt-1 text-sm text-slate-500">Scan the pages that matter.</p>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-indigo-600">02</p>
-                    <p class="mt-1 font-semibold text-slate-900">Understand</p>
-                    <p class="mt-1 text-sm text-slate-500">See what is helping or hurting.</p>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-indigo-600">03</p>
-                    <p class="mt-1 font-semibold text-slate-900">Improve</p>
-                    <p class="mt-1 text-sm text-slate-500">Act on prioritized recommendations.</p>
-                </div>
-            </div>
-        </div>
     </section>
 </template>
