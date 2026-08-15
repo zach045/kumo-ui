@@ -10,6 +10,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import PlainNav from '../components/layout/PlainNav.vue';
 import GoogleSignIn from '../components/GoogleSignIn.vue';
+import { isValidEmail } from '../utils/validation';
 
 const firstName = ref('');
 const lastName = ref('');
@@ -23,6 +24,12 @@ const fullName = computed(() => [firstName.value.trim(), lastName.value.trim()].
 
 async function register() {
     registrationError.value = '';
+
+    if (!isValidEmail(email.value)) {
+        registrationError.value = 'Enter a valid email address with a domain suffix, such as name@example.com.';
+        return;
+    }
+
     isSubmitting.value = true;
 
     try {
