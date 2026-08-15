@@ -11,6 +11,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import PlainNav from '../components/layout/PlainNav.vue';
 import GoogleSignIn from '../components/GoogleSignIn.vue';
+import { isValidEmail } from '../utils/validation';
 
 const email = ref('');
 const password = ref('');
@@ -23,6 +24,12 @@ const isAuthenticated = computed(() => store.getters.isAuthenticated);
 
 async function login() {
     loginError.value = '';
+
+    if (!isValidEmail(email.value)) {
+        loginError.value = 'Enter a valid email address with a domain suffix, such as name@example.com.';
+        return;
+    }
+
     isSubmitting.value = true;
 
     try {
