@@ -14,7 +14,7 @@ import GoogleSignIn from '../components/GoogleSignIn.vue';
 
 const email = ref('');
 const password = ref('');
-const loginError = ref(false);
+const loginError = ref('');
 const isSubmitting = ref(false);
 
 const store = useStore();
@@ -22,14 +22,19 @@ const router = useRouter();
 const isAuthenticated = computed(() => store.getters.isAuthenticated);
 
 async function login() {
-    loginError.value = false;
+    loginError.value = '';
     isSubmitting.value = true;
 
     try {
-        await store.dispatch('login', {
+        const result = await store.dispatch('login', {
             email: email.value,
             password: password.value,
         });
+
+        if (!result?.success) {
+            loginError.value = result?.error || 'We couldn’t log you in. Please try again.';
+            return;
+        }
 
         const token = localStorage.getItem('token');
 
@@ -38,9 +43,9 @@ async function login() {
             return;
         }
 
-        loginError.value = true;
+        loginError.value = store.getters.getAuthError || 'We couldn’t complete your login. Please try again.';
     } catch (error) {
-        loginError.value = true;
+        loginError.value = 'Something unexpected happened. Please try again.';
     } finally {
         isSubmitting.value = false;
     }
@@ -116,7 +121,7 @@ async function login() {
                                     role="alert"
                                     class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
                                 >
-                                    We couldn’t log you in. Check your email and password, then try again.
+                                    {{ loginError }}
                                 </div>
 
                                 <button
