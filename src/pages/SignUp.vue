@@ -26,17 +26,15 @@ async function register() {
     isSubmitting.value = true;
 
     try {
-        await store.dispatch('register', {
+        const result = await store.dispatch('register', {
             name: fullName.value,
             email: email.value,
             password: password.value,
         });
 
-        const authError = store.getters.getAuthError;
-        if (authError) {
-            registrationError.value = typeof authError === 'string'
-                ? authError
-                : 'We couldn’t create your account. Please check your information and try again.';
+        if (!result?.success) {
+            registrationError.value = result?.error
+                || 'We couldn’t create your account. Please check your information and try again.';
         }
     } catch (error) {
         registrationError.value = 'We couldn’t create your account. Please try again.';
