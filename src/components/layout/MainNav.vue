@@ -23,12 +23,12 @@ const user = computed(() => store.getters.getUser);
                 Kumo
             </router-link>
 
-            <div class="orbitron-regular flex items-center gap-2">
+            <div class="flex items-center gap-2">
                 <ul class="mr-3 flex items-center">
                     <li v-for="item in items" :key="item.name">
                         <a
                             :href="item.link"
-                            class="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-white/70 hover:text-indigo-700"
+                            class="rounded-lg px-3 py-2 text-sm font-semibold tracking-tight text-slate-600 transition-colors hover:bg-white/70 hover:text-indigo-700"
                         >
                             {{ item.name }}
                         </a>
@@ -37,7 +37,7 @@ const user = computed(() => store.getters.getUser);
 
                 <template v-if="user">
                     <router-link :to="{ name: 'dashboard' }">
-                        <BaseButton class="border-none bg-indigo-600 text-white shadow-sm hover:bg-indigo-700">
+                        <BaseButton class="border-none bg-indigo-600 font-semibold text-white shadow-sm hover:bg-indigo-700">
                             <UserCircleIcon class="mr-1 size-4" />
                             {{ user.name }}
                         </BaseButton>
@@ -47,12 +47,12 @@ const user = computed(() => store.getters.getUser);
                 <template v-else>
                     <router-link
                         :to="{ name: 'login' }"
-                        class="px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:text-indigo-700"
+                        class="px-3 py-2 text-sm font-semibold tracking-tight text-slate-700 transition-colors hover:text-indigo-700"
                     >
                         Log in
                     </router-link>
                     <router-link :to="{ name: 'signup' }">
-                        <BaseButton class="border-none bg-indigo-600 px-5 text-white shadow-sm hover:bg-indigo-700 hover:shadow-md">
+                        <BaseButton class="border-none bg-indigo-600 px-5 font-semibold text-white shadow-sm hover:bg-indigo-700 hover:shadow-md">
                             Get Started
                         </BaseButton>
                     </router-link>
