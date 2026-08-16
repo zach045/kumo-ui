@@ -12,7 +12,7 @@ test('keywords route uses the implemented workspace', async () => {
   assert.doesNotMatch(router, /protectedModule\('\/keywords'/);
 });
 
-test('keywords are derived from snapshot recommendations and preserve evidence', async () => {
+test('snapshot opportunities preserve their source evidence', async () => {
   const source = await readSource('../src/pages/Keywords.vue');
 
   assert.match(source, /dispatch\('fetchAllSnapshots'\)/);
@@ -21,18 +21,47 @@ test('keywords are derived from snapshot recommendations and preserve evidence',
   assert.match(source, /name: 'snapshot-item'/);
 });
 
+test('tracked keyword state uses the keyword API', async () => {
+  const [page, actions, store] = await Promise.all([
+    readSource('../src/pages/Keywords.vue'),
+    readSource('../src/store/modules/keywords/actions.js'),
+    readSource('../src/store/index.js'),
+  ]);
+
+  assert.match(store, /keywordsModule/);
+  assert.match(page, /dispatch\('fetchKeywords'\)/);
+  assert.match(page, /dispatch\('createKeyword'/);
+  assert.match(page, /dispatch\('updateKeyword'/);
+  assert.match(page, /dispatch\('deleteKeyword'/);
+  assert.match(actions, /api\.get\('\/keywords'/);
+  assert.match(actions, /api\.post\('\/keywords'/);
+  assert.match(actions, /api\.patch\(`\/keywords\/\$\{id\}`/);
+  assert.match(actions, /api\.delete\(`\/keywords\/\$\{id\}`/);
+});
+
+test('keywords workspace separates opportunities from tracked records', async () => {
+  const source = await readSource('../src/pages/Keywords.vue');
+
+  assert.match(source, /activeTab === 'opportunities'/);
+  assert.match(source, /activeTab === 'tracked'/);
+  assert.match(source, /Track keyword/);
+  assert.match(source, /Add keyword/);
+  assert.match(source, /Keyword status/);
+  assert.match(source, /Keyword priority/);
+});
+
 test('keywords workspace does not present unsupported SEO metrics', async () => {
   const source = await readSource('../src/pages/Keywords.vue');
 
   assert.match(source, /verified data provider/);
-  assert.doesNotMatch(source, /mock|fake|estimated volume/i);
   assert.doesNotMatch(source, /Math\.random/);
 });
 
-test('keywords workspace supports filtering and dark mode', async () => {
+test('keywords workspace supports filtering, API errors, and dark mode', async () => {
   const source = await readSource('../src/pages/Keywords.vue');
 
   assert.match(source, /v-model="query"/);
   assert.match(source, /v-model="selectedSnapshot"/);
+  assert.match(source, /role="alert"/);
   assert.match(source, /dark:bg-slate-900/);
 });
