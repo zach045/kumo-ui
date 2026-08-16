@@ -383,7 +383,7 @@ onMounted(() =>
             <article
               v-for="keyword in filteredTrackedKeywords"
               :key="keyword.id"
-              class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_150px_130px_44px] lg:items-center"
+              class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_150px_130px_110px] lg:items-center"
             >
               <div class="min-w-0">
                 <p class="text-sm font-bold text-slate-950 dark:text-white">{{ keyword.term }}</p>
@@ -426,11 +426,12 @@ onMounted(() =>
               <button
                 type="button"
                 :disabled="isIdPending(keyword.id)"
-                class="flex size-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
-                :aria-label="`Delete ${keyword.term}`"
+                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 text-xs font-bold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                :aria-label="`Remove ${keyword.term}`"
                 @click="removeTrackedKeyword(keyword)"
               >
-                <TrashIcon class="size-5" />
+                <TrashIcon class="size-4" />
+                Remove
               </button>
             </article>
           </div>
