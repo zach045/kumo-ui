@@ -200,6 +200,19 @@ const toggleAnalysis = async (keyword) => {
 const refreshAnalysis = (keyword) =>
   withPendingId(keyword.id, () => store.dispatch('analyzeKeyword', keyword.id));
 
+const rescanKeywordSource = (keyword) =>
+  withPendingId(keyword.id, async () => {
+    const result = await store.dispatch('analyzeSite', {
+      siteUrl: keyword.source.url,
+      siteType: 'Website',
+    });
+
+    if (!result?.success) return result;
+
+    await store.dispatch('fetchKeywords');
+    return store.dispatch('fetchKeywordAnalysis', keyword.id);
+  });
+
 const tagLabel = (tag) => ({
   meta_description: 'Meta description',
   img_alt: 'Image alt',
@@ -424,7 +437,14 @@ onMounted(() =>
                   </router-link>
                   <p v-else class="mt-1 text-xs text-slate-400 dark:text-slate-500">Added manually</p>
 
-                  <div v-if="keyword.assessment" class="mt-3 flex flex-wrap items-center gap-2">
+                  <div
+                    v-if="keyword.assessment?.coverageStatus === 'requires_rescan'"
+                    class="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                  >
+                    <ArrowPathIcon class="size-3.5" />
+                    Rescan required
+                  </div>
+                  <div v-else-if="keyword.assessment" class="mt-3 flex flex-wrap items-center gap-2">
                     <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
                       Placement {{ keyword.assessment.placementScore }}/100
                     </span>
@@ -434,6 +454,12 @@ onMounted(() =>
                     <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
                       {{ keyword.assessment.totalOccurrences }} occurrence{{ keyword.assessment.totalOccurrences === 1 ? '' : 's' }}
                     </span>
+                  </div>
+                  <div
+                    v-else-if="keyword.source"
+                    class="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                  >
+                    Analysis pending
                   </div>
 
                   <button
@@ -496,8 +522,17 @@ onMounted(() =>
                   <CameraIcon class="mx-auto size-8 text-amber-500" />
                   <p class="mt-3 text-sm font-bold text-slate-900 dark:text-white">This snapshot needs to be rescanned</p>
                   <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    It was created before Kumo began storing tag-level evidence. Run a new snapshot for this page, then track the keyword from that result.
+                    It was created before Kumo began storing tag-level evidence. Rescan the source page to capture its current title, headings, paragraphs, links, and image alt text.
                   </p>
+                  <button
+                    type="button"
+                    :disabled="isIdPending(keyword.id)"
+                    class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 text-xs font-bold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    @click="rescanKeywordSource(keyword)"
+                  >
+                    <ArrowPathIcon :class="['size-4', isIdPending(keyword.id) && 'animate-spin']" />
+                    {{ isIdPending(keyword.id) ? 'Rescanning…' : 'Rescan page' }}
+                  </button>
                 </div>
 
                 <div v-else-if="analysisFor(keyword.id)">
