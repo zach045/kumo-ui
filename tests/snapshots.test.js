@@ -26,3 +26,24 @@ test('snapshot details fetch by route id and delete through the store', async ()
   assert.match(item, /router\.push\(\{ name: 'seo-snapshot' \}\)/);
   assert.equal(item.includes('console.log'), false);
 });
+
+
+test('authenticated experience persists and applies the selected theme', async () => {
+  const [layout, mobileNav, theme, dashboard, list, item] = await Promise.all([
+    readSource('../src/components/layout/BaseLayout.vue'),
+    readSource('../src/components/layout/MobileNav.vue'),
+    readSource('../src/composables/useTheme.js'),
+    readSource('../src/pages/Dashboard.vue'),
+    readSource('../src/components/seo/SnapshotList.vue'),
+    readSource('../src/components/seo/SnapshotItem.vue'),
+  ]);
+
+  assert.match(layout, /:class="\{ dark: isDark \}"/);
+  assert.match(layout, /@click="toggleTheme"/);
+  assert.match(mobileNav, /@click="toggleTheme"/);
+  assert.match(theme, /localStorage\.setItem\(STORAGE_KEY/);
+
+  for (const source of [layout, mobileNav, dashboard, list, item]) {
+    assert.equal(source.includes('dark:'), true);
+  }
+});
