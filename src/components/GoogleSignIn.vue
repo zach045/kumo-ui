@@ -40,10 +40,9 @@ const handleCredentialResponse = async (response) => {
             return;
         }
 
-        const token = localStorage.getItem('token');
         const authenticated = store.getters.isAuthenticated;
 
-        if (authenticated && token) {
+        if (authenticated) {
             await router.push('/dashboard');
             return;
         }
