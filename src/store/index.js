@@ -1,11 +1,13 @@
 import { createStore } from 'vuex';
 import authModule from './modules/auth/index';
 import seoModule from './modules/seo/index';
+import keywordsModule from './modules/keywords/index';
 
 const store = createStore({
     modules: {
         authModule,
-        seoModule
+        seoModule,
+        keywordsModule
     },
     state: {
         collapsed: true
