@@ -5,6 +5,7 @@ import mutations from './mutations';
 export default {
   state: {
     keywords: [],
+    analyses: {},
     isLoading: false,
     error: null,
   },
