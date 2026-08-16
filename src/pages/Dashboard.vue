@@ -126,14 +126,14 @@ onMounted(async () => {
           <div class="flex flex-col gap-3 sm:flex-row">
             <router-link
               :to="{ name: 'seo-snapshot' }"
-              class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/100 px-5 text-sm font-bold text-white transition hover:bg-indigo-400"
+              class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white transition hover:bg-indigo-700"
             >
               <PlusIcon class="size-5" />
               New snapshot
             </router-link>
             <router-link
               :to="{ name: 'history' }"
-              class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-bold text-white transition hover:bg-white/10"
+              class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-bold text-white transition hover:bg-zinc-900"
             >
               <ClockIcon class="size-5" />
               View history
