@@ -1,7 +1,5 @@
-import axios from 'axios';
 import router from '../../../router';
-
-const url = 'http://localhost:4000/api/users';
+import api from '../../../services/api';
 
 function getAuthErrorMessage(error, action) {
   if (!error?.response) {
@@ -11,12 +9,16 @@ function getAuthErrorMessage(error, action) {
   const status = error.response.status;
   const serverMessage = error.response.data?.message;
 
+  if (status === 429) {
+    return serverMessage || 'Too many attempts. Please wait before trying again.';
+  }
+
   if (action === 'login' && (status === 401 || status === 403)) {
-    return 'The email or password you entered is incorrect.';
+    return serverMessage || 'The email or password you entered is incorrect.';
   }
 
   if (action === 'register' && status === 409) {
-    return 'An account with this email already exists. Try logging in instead.';
+    return serverMessage || 'An account with this email already exists. Try logging in instead.';
   }
 
   if (status === 400 && serverMessage) {
@@ -34,18 +36,19 @@ function getAuthErrorMessage(error, action) {
   );
 }
 
+const establishAuthenticatedUser = (commit, response) => {
+  const user = response.data?.user || null;
+  commit('SET_USER', user);
+  return user;
+};
+
 export default {
   async register({ commit }, { name, email, password }) {
     commit('SET_AUTH_ERROR', null);
 
     try {
-      const response = await axios.post(
-        url + '/register',
-        { name, email, password },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-
-      commit('SET_TOKEN', response.data.token);
+      const response = await api.post('/users/register', { name, email, password });
+      establishAuthenticatedUser(commit, response);
       return { success: true };
     } catch (error) {
       const message = getAuthErrorMessage(error, 'register');
@@ -54,18 +57,12 @@ export default {
     }
   },
 
-  async login({ commit, dispatch }, { email, password }) {
+  async login({ commit }, { email, password }) {
     commit('SET_AUTH_ERROR', null);
 
     try {
-      const response = await axios.post(
-        url + '/login',
-        { email, password },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-
-      commit('SET_TOKEN', response.data.token);
-      await dispatch('fetchUser');
+      const response = await api.post('/users/login', { email, password });
+      establishAuthenticatedUser(commit, response);
       return { success: true };
     } catch (error) {
       const message = getAuthErrorMessage(error, 'login');
@@ -74,18 +71,12 @@ export default {
     }
   },
 
-  async googleLogin({ commit, dispatch }, token) {
+  async googleLogin({ commit }, token) {
     commit('SET_AUTH_ERROR', null);
 
     try {
-      const response = await axios.post(
-        url + '/google-login',
-        { token },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-
-      commit('SET_TOKEN', response.data.token);
-      await dispatch('fetchUser');
+      const response = await api.post('/users/google-login', { token });
+      establishAuthenticatedUser(commit, response);
       return { success: true };
     } catch (error) {
       const message = getAuthErrorMessage(error, 'login');
@@ -94,36 +85,31 @@ export default {
     }
   },
 
-  async autoLogin({ commit }) {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('auth_user');
-
-    if (token && user) {
-      commit('SET_TOKEN', token);
-    }
-  },
-
-  async fetchUser({ commit, state, dispatch }) {
-    if (!state.token) return;
-
+  async fetchUser({ commit }) {
     try {
-      const response = await axios.get(url + '/protected', {
-        headers: { Authorization: `Bearer ${state.token}` }
-      });
-
+      const response = await api.get('/users/protected');
       commit('SET_USER', response.data.user ?? null);
-      await dispatch('fetchInsights');
+      commit('SET_AUTH_ERROR', null);
+      return { success: true };
     } catch (error) {
-      const message = getAuthErrorMessage(error, 'login');
-      console.error('Error fetching user:', error);
-      commit('CLEAR_TOKEN');
-      commit('SET_AUTH_ERROR', message);
+      commit('SET_USER', null);
+
+      if (error.response?.status !== 401) {
+        const message = getAuthErrorMessage(error, 'login');
+        commit('SET_AUTH_ERROR', message);
+      }
+
+      return { success: false };
     }
   },
 
-  logout({ commit }) {
-    commit('CLEAR_TOKEN');
-    commit('CLEAR_SITE');
-    router.push('/');
-  }
+  async logout({ commit }) {
+    try {
+      await api.post('/users/logout');
+    } finally {
+      commit('SET_USER', null);
+      commit('CLEAR_SITE');
+      router.push('/');
+    }
+  },
 };
