@@ -3,6 +3,7 @@ import HomePage from '../pages/HomePage.vue';
 import Dashboard from '../pages/Dashboard.vue';
 import Login from '../pages/Login.vue';
 import SignUp from '../pages/SignUp.vue';
+import Keywords from '../pages/Keywords.vue';
 import ModulePlaceholder from '../pages/ModulePlaceholder.vue';
 import Snapshot from '../components/seo/SnapshotList.vue';
 import SnapshotItem from '../components/seo/SnapshotItem.vue';
@@ -39,7 +40,12 @@ const routes = [
     component: SnapshotItem,
     meta: { requiresAuth: true },
   },
-  protectedModule('/keywords', 'keywords', 'Keywords', 'Discover, organize, and prioritize the search terms that can move your content forward.'),
+  {
+    path: '/keywords',
+    name: 'keywords',
+    component: Keywords,
+    meta: { requiresAuth: true },
+  },
   protectedModule('/reports', 'reports', 'Reports', 'Turn snapshot data into clear, shareable performance reports and recommendations.'),
   protectedModule('/history', 'history', 'History', 'Review previous analyses, compare changes, and understand how your site is progressing.'),
   protectedModule('/settings', 'settings', 'Settings', 'Manage your profile, website preferences, integrations, and account security.'),
