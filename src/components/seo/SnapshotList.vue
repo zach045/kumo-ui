@@ -1,270 +1,215 @@
-
 <script setup>
-  // Imports
-  import { ref, computed, onBeforeMount, onMounted, watch, reactive } from 'vue';
-  import { useStore } from 'vuex';
-  import { useRoute } from 'vue-router';
-  import BaseSpinner from '../UI/BaseSpinner.vue';
-  import BaseModal from '../UI/BaseModal.vue';
-  import SnapshotItem from './SnapshotItem.vue';
-  import SnapshotForm from './SnapshotForm.vue';
-  import { TrashIcon, PlusCircleIcon, EyeIcon, PencilSquareIcon, ArrowPathIcon, XCircleIcon, ChevronRightIcon, ChevronLeftIcon } from '@heroicons/vue/24/solid';
-  import SnapshotModal from './SnapshotModal.vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useStore } from 'vuex';
+import {
+  ArrowRightIcon,
+  CameraIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+import SnapshotForm from './SnapshotForm.vue';
 
-  // Variables
-  const route = useRoute();
+const store = useStore();
+const isOpen = ref(false);
+const query = ref('');
+const pageNumber = ref(1);
+const pageSize = 8;
+const form = reactive({ url: '', desc: '' });
 
-  const store = useStore();
-  const toggle = ref(false);
-  let titles = ref([
-    {
-        id: 1,
-        name: 'Title',
-        style: 'pl-6 py-3 text-left font-semibold text-slate-700'
-    },
-    {
-        id: 2,
-        name: 'Score',
-        style: 'px-2 py-3 text-center font-semibold text-slate-700'
-    },
-    {
-        id: 3,
-        name: 'Word Count',
-        style: 'px-2 py-3 text-center font-semibold text-slate-700'
-    },
-    {
-        id: 4,
-        name: 'Status',
-        style: 'px-2 py-3 text-center font-semibold text-slate-700'
-    },
-    {
-        id: 5,
-        name: 'Actions',
-        style: 'px-2 py-3 text-center font-semibold text-slate-700'
-    }
-  ]);
-  const form = reactive({
-    url: '',
-    desc: ''
-  });
-  const fields = [
-    {
-      key: 'url',
-      placeholder: 'https://example.com',
-      type: 'url',
-      label: 'URL'
-    },
-    {
-      key: 'desc',
-      placeholder: 'Blog, Portfolio, etc...',
-      type: 'text',
-      label: 'Description'
-    }
-  ];
+const fields = [
+  { key: 'url', placeholder: 'https://example.com', type: 'url', label: 'Website URL' },
+  { key: 'desc', placeholder: 'SaaS, local business, portfolio…', type: 'text', label: 'Website type' },
+];
 
-  // const currentSnapshot = ref(0);
-  const sites = computed(() => store.getters.getSites);
-  const totalSnapshots = computed(() => {
-    return sites.value ? sites.value.length : 0;
-  });
+const sites = computed(() => store.getters.getSites || []);
+const isLoading = computed(() => store.getters.getIsLoading);
+const filteredSites = computed(() => {
+  const search = query.value.trim().toLowerCase();
+  if (!search) return sites.value;
+  return sites.value.filter((site) =>
+    [site.title, site.url, site.status].some((value) => String(value || '').toLowerCase().includes(search))
+  );
+});
+const pageCount = computed(() => Math.max(1, Math.ceil(filteredSites.value.length / pageSize)));
+const paginatedSites = computed(() => {
+  const start = (pageNumber.value - 1) * pageSize;
+  return filteredSites.value.slice(start, start + pageSize);
+});
+const rangeStart = computed(() => filteredSites.value.length ? (pageNumber.value - 1) * pageSize + 1 : 0);
+const rangeEnd = computed(() => Math.min(pageNumber.value * pageSize, filteredSites.value.length));
 
-  // const site = computed(() => {
-  //   if (!sites.value || sites.value.length === 0) return null;
-  //   return sites.value[currentSnapshot.value];
-  // });
-  const isLoading = computed(() => store.getters.getIsLoading);
+watch(query, () => { pageNumber.value = 1; });
 
-  var pageSize = ref(10);
-  var pageNumber = ref(1);
-  var from = computed(() => (pageSize.value * (pageNumber.value - 1)) + 1);
-  var to = computed (() => {
-    if (!sites.value || sites.value.length === 0) return 0;
-    else {
-      return (pageSize.value * pageNumber.value) > totalSnapshots.value ? sites.value.length : pageNumber.value * pageSize.value;
+const formatDate = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : new Intl.DateTimeFormat('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  }).format(date);
+};
 
-    }
-  });
+const scoreTone = (score) => {
+  if (score >= 80) return 'bg-emerald-50 text-emerald-700';
+  if (score >= 60) return 'bg-amber-50 text-amber-700';
+  return 'bg-rose-50 text-rose-700';
+};
 
-  const paginatedSites = computed(() => {
-    if (!sites.value || sites.value.length === 0) return [];
+const openModal = () => {
+  isOpen.value = true;
+  document.body.classList.add('overflow-hidden');
+};
+const closeModal = () => {
+  isOpen.value = false;
+  document.body.classList.remove('overflow-hidden');
+};
 
-    const start = (pageNumber.value - 1) * pageSize.value;
-    const end = start + pageSize.value;
-
-    return sites.value.slice(start, end);
-  });
-
-  const prevPageDisabled = computed(() => pageNumber.value === 1);
-
-  const nextPageDisabled = computed(() => {
-    if (!sites.value) return true;
-    const maxPages = Math.ceil(sites.value.length / pageSize.value);
-    return pageNumber.value === maxPages;
-  });
-
-
-
-  // Functions 
-  function toggleModal() {
-    toggle.value = !toggle.value
-    toggle.value == true ? document.body.classList.add('overflow-hidden') : document.body.classList.remove('overflow-hidden');
+const handleAnalyze = async () => {
+  const result = await store.dispatch('analyzeSite', { siteUrl: form.url, siteType: form.desc });
+  if (result?.success) {
+    form.url = '';
+    form.desc = '';
+    closeModal();
   }
-  
-  async function handleAnalyze() {
-    toggle.value = false;
-    await store.dispatch('analyzeSite', {
-      siteUrl: form.url,
-      siteType: form.desc
-    });
-    form.url = '',
-    form.desc = ''
-  }
+};
 
-  async function fetchSnapshots() {
-    await store.dispatch('fetchAllSnapshots');
-  }
-
-  function startPolling(snapshotId) {
-      const interval = setInterval(async () => {
-        const processing = sites.value.filter(s => s.status !== 'Complete' || s.status !== 'complete');
-        await store.dispatch('fetchSnapshotById', { id: snapshotId });
-
-          // stop polling once suggestions exist
-          const updatedSite = sites.value.find(s => s.id === snapshotId);
-          if (updatedSite && updatedSite.suggestions) {
-              clearInterval(interval);
-          }
-      }, 5000);
-  }
-
-  function prevSnapshot() {
-    if (pageNumber.value > 1) {
-      pageNumber.value--;
-    }
-  }
-
-
-  function nextSnapshot() {
-    const maxPages = Math.ceil(sites.value.length / pageSize.value);
-    if (pageNumber.value < maxPages) {
-      pageNumber.value++;
-    }
-  }
-
-
-  function closeForm() {
-    toggle.value = false;
-  }
-
-  // Hooks
-  onMounted(() => {
-    //Load sites
-    if(!sites.value || sites.value.length == 0) {
-      fetchSnapshots();
-    }
-  });
-
+onMounted(() => store.dispatch('fetchAllSnapshots'));
 </script>
 
 <template>
-    <base-layout>
-        <template #header>
-            <span class="text-blue-800 orbitron-bold text-lg">SEO Snapshot</span>
-        </template>
-        <section>
-          <base-card class="orbitron-regular text-left z-40 max-h-full overflow-x-auto">
-          <!-- Toolbar -->
-              <div class="w-full flex justify-start lg:justify-end items-center mb-8 transition-all duration-400 ease-in-out">
-                  <base-button
-                      @click="toggleModal"
-                      class="border-none bg-indigo-400 hover:bg-indigo-700 text-white font-normal text-sm py-3"
-                  >
-                  <plus-circle-icon class="size-6" />
-                  <span class="ml-2">New Snapshot</span>
-                  </base-button>
-              </div>
-              <div class="w-full overflow-x-auto sm:overflow-x-visible" v-if="!isLoading">
-                  <!-- Table -->
-                  <table class="w-full table-fixed border-separate border-spacing-0 overflow-x-auto min-w-3xl">
-                      <!-- Table layout -->
-                      <colgroup>
-                          <col style="width:40%" />
-                          <col style="width:15%" />
-                          <col style="width:15%" />
-                          <col style="width:15%" />
-                          <col style="width:15%" />
-                      </colgroup>
-                      <thead class="w-full border-b border-blue-200">
-                          <tr role="row">
-                              <th v-for="item in titles" :key="item.id" class="text-sm md:text-md text-" :class="item.style">{{ item.name }}</th>
-                          </tr>
-                      </thead>
-                      <tbody class="w-full rounded-bl-lg rounded-br-lg p-4">
-                          <tr role="row" v-for="site in paginatedSites" :key="site.id" class="w-full py-4 text-sm text-left hover:bg-indigo-100 transition duration-200 ease-in-out cursor-pointer">
-                              <td role="cell" class="px-6 py-4 align-middle text-slate-800 text-ellipsis text-zinc-600 truncate font-semibold">
-                                {{ site.title }}
-                              </td>
-                              <td role="cell" class="px-6 py-4 align-middle text-center text-slate-700">
-                                <span class="rounded-lg bg-white text-green-500 border border-green-400 px-4 py-3" :class="{ 'border-red-400 text-red-400' : site.score < 60, 'border-indigo-500' : site.status == 'Pending'}">
-                                  {{ site.score || 'Pending' }}
-                                </span>
-                              </td>
-                              <td role="cell" class="px-6 py-4 align-middle text-center text-slate-700">
-                                {{ site.wordCount }}
-                              </td>
-                              <td role="cell" class="px-6 py-4 align-middle text-center font-semibold text-md">
-                                <span class="rounded-lg border border-green-500 text-green-500 bg-white px-4 py-3" :class="{ 'border-indigo-500 text-indigo-500' : site.status == 'Pending'}">
-                                  {{ site.status }}
-                                </span>
-                              </td>
-                              <td role="cell" class="py-4 text-center flex justify-center items-center gap-2">
-                                <router-link :to="{ name: 'snapshot-item', params: { id: site.id } }">
-                                  <span class="cursor-pointer">
-                                      <span class="hidden">View</span>
-                                      <eye-icon class="size-6 text-zinc-400 hover:text-zinc-600 transition duration-400 ease-in-out" />
-                                  </span>
-                                </router-link>
-                              </td>
-                          </tr>
-                      </tbody>
-                  </table>
-                  <div class="w-full mt-4 flex justify-between items-center text-sm border-t border-indigo-100 pt-6">
-                    <div class="flex items-center justify-center">
-                      <button :disabled="prevPageDisabled" @click="prevSnapshot" class="p-2 hover:bg-indigo-400 transition duration-300 ease-in-out cursor-pointer rounded-md disabled:bg-transparent disabled:hover:bg-transparent disabled:text-gray-300" :class="{'bg-transparent hover:bg-transparent text-gray-300' : prevPageDisabled}">
-                        <ChevronLeftIcon class="size-5" />
-                        <span class="hidden">
-                          Prev
-                        </span>
-                      </button>
-                      <span class="mx-6 leading-relaxed">{{ pageNumber }}</span>
-                      <button :disabled="nextPageDisabled" @click="nextSnapshot" class="p-2 hover:bg-indigo-400 transition duration-300 ease-in-out cursor-pointer rounded-md" :class="{'bg-transparent hover:bg-transparent text-gray-300' : nextPageDisabled}">
-                        <ChevronRightIcon class="size-5" />
-                        <span class="hidden">Next</span>
-                      </button>
-                    </div>
-                    <div>{{ from }} to {{ to }} of {{ totalSnapshots }} Results</div>
-                  </div>
-              </div>
-              <base-spinner v-else />
-          </base-card>
-        </section>
-        <div v-if="toggle" class="fixed inset-0 w-full h-screen top-13 left-0 overflow-none after:bg-indigo-400 after:w-full after:absolute after:top-0 after:left:0 after:h-screen after:opacity-90 absolute:overflow-none after:z-10 flex justify-center items-center">
-          <snapshot-modal class="w-2xl z-20 bg-zinc-50 py-12 px-8">
-              <div class="flex justify-between items-center flex-nowrap border-b border-blue-400 pb-6 mb-8">
-                <h3 class="orbitron-bold text-2xl text-blue-600 w-full">New Snapshot</h3>
-                <button @click="toggleModal">
-                  <XCircleIcon class="size-8 hover:text-blue-700 text-blue-300 cursor-pointer transition ease-in-out duration-300" />
-                </button>
-              </div>
-              <SnapshotForm
-                :form="form"
-                :fields="fields"
-                @analyze="handleAnalyze"
-                @closeForm="handleCloseForm"
-              />
-          </snapshot-modal>
-        </div>
-        <router-view />
-    </base-layout>
-</template>
+  <base-layout>
+    <template #header>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Analysis</p>
+        <p class="mt-1 text-sm font-bold text-slate-950">Snapshots</p>
+      </div>
+    </template>
 
+    <main class="mx-auto w-full max-w-7xl py-8 sm:py-10">
+      <section class="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+        <div>
+          <p class="text-sm font-bold text-indigo-600">SEO snapshot library</p>
+          <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Every analysis, in one place.</h1>
+          <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+            Review previous scans, monitor scores, and open any snapshot for its complete AI recommendations.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700"
+          @click="openModal"
+        >
+          <PlusIcon class="size-5" />
+          New snapshot
+        </button>
+      </section>
+
+      <section class="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <header class="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm font-bold text-slate-950">{{ filteredSites.length }} snapshot{{ filteredSites.length === 1 ? '' : 's' }}</p>
+            <p class="mt-1 text-xs text-slate-400">Most recent analyses appear first</p>
+          </div>
+          <label class="relative block w-full sm:w-72">
+            <span class="sr-only">Search snapshots</span>
+            <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+            <input
+              v-model="query"
+              type="search"
+              placeholder="Search title, URL, or status"
+              class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+            />
+          </label>
+        </header>
+
+        <div v-if="isLoading && !sites.length" class="grid min-h-80 place-items-center p-8">
+          <div class="text-center">
+            <div class="mx-auto size-8 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600"></div>
+            <p class="mt-4 text-sm font-medium text-slate-500">Loading snapshots…</p>
+          </div>
+        </div>
+
+        <div v-else-if="paginatedSites.length" class="divide-y divide-slate-100">
+          <router-link
+            v-for="site in paginatedSites"
+            :key="site.id"
+            :to="{ name: 'snapshot-item', params: { id: site.id } }"
+            class="group grid gap-4 p-5 transition hover:bg-slate-50 sm:grid-cols-[minmax(0,1fr)_110px_120px_120px_24px] sm:items-center"
+          >
+            <div class="min-w-0">
+              <div class="flex items-center gap-3">
+                <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <CameraIcon class="size-5" />
+                </span>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-bold text-slate-950">{{ site.title || 'Untitled page' }}</p>
+                  <p class="mt-1 truncate text-xs text-slate-400">{{ site.url }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">Score</p>
+              <span :class="['mt-1 inline-flex rounded-full px-3 py-1 text-xs font-bold sm:mt-0', scoreTone(Number(site.score || 0))]">
+                {{ site.score ?? '—' }}/100
+              </span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">Words</p>
+              <p class="mt-1 text-sm font-semibold text-slate-600 sm:mt-0">{{ Number(site.wordCount || 0).toLocaleString() }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">Created</p>
+              <p class="mt-1 text-xs font-medium text-slate-500 sm:mt-0">{{ formatDate(site.createdAt) }}</p>
+            </div>
+            <ArrowRightIcon class="size-5 text-slate-300 transition group-hover:translate-x-1 group-hover:text-indigo-600" />
+          </router-link>
+        </div>
+
+        <div v-else class="px-6 py-16 text-center">
+          <span class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+            <CameraIcon class="size-7" />
+          </span>
+          <h2 class="mt-5 text-xl font-bold text-slate-950">{{ query ? 'No matching snapshots' : 'No snapshots yet' }}</h2>
+          <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+            {{ query ? 'Try a different search term.' : 'Analyze your first website to begin building an SEO performance history.' }}
+          </p>
+          <button v-if="!query" type="button" class="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white" @click="openModal">
+            Create snapshot
+          </button>
+        </div>
+
+        <footer v-if="filteredSites.length" class="flex flex-col gap-4 border-t border-slate-100 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>Showing {{ rangeStart }}–{{ rangeEnd }} of {{ filteredSites.length }}</p>
+          <div class="flex items-center gap-2">
+            <button type="button" :disabled="pageNumber === 1" class="rounded-lg border border-slate-200 p-2 disabled:opacity-30" @click="pageNumber--">
+              <ChevronLeftIcon class="size-4" />
+            </button>
+            <span class="px-2 font-semibold text-slate-700">{{ pageNumber }} / {{ pageCount }}</span>
+            <button type="button" :disabled="pageNumber === pageCount" class="rounded-lg border border-slate-200 p-2 disabled:opacity-30" @click="pageNumber++">
+              <ChevronRightIcon class="size-4" />
+            </button>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <div v-if="isOpen" class="fixed inset-0 z-[70] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" @click.self="closeModal">
+      <section class="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <header class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">New analysis</p>
+            <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Create an SEO snapshot</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-500">Enter a public page URL and tell Kumo what kind of site it is.</p>
+          </div>
+          <button type="button" class="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" @click="closeModal">
+            <XMarkIcon class="size-6" />
+          </button>
+        </header>
+        <SnapshotForm :form="form" :fields="fields" :is-loading="isLoading" @analyze="handleAnalyze" />
+      </section>
+    </div>
+  </base-layout>
+</template>
