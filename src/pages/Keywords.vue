@@ -3,8 +3,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useStore } from 'vuex';
 import {
   ArrowRightIcon,
+  ArrowPathIcon,
   BookmarkIcon,
   CameraIcon,
+  ChevronDownIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   SparklesIcon,
@@ -19,6 +21,7 @@ const manualTerm = ref('');
 const manualPriority = ref('medium');
 const pendingTerms = ref(new Set());
 const pendingIds = ref(new Set());
+const expandedKeywordId = ref(null);
 
 const sites = computed(() => store.getters.getSites || []);
 const trackedKeywords = computed(() => store.getters.getKeywords || []);
@@ -179,6 +182,29 @@ const removeTrackedKeyword = async (keyword) => {
   if (!window.confirm(`Stop tracking “${keyword.term}”?`)) return;
   await withPendingId(keyword.id, () => store.dispatch('deleteKeyword', keyword.id));
 };
+
+const analysisFor = (id) => store.getters.getKeywordAnalysis(id);
+
+const toggleAnalysis = async (keyword) => {
+  if (expandedKeywordId.value === keyword.id) {
+    expandedKeywordId.value = null;
+    return;
+  }
+
+  expandedKeywordId.value = keyword.id;
+  if (!analysisFor(keyword.id) && keyword.source) {
+    await withPendingId(keyword.id, () => store.dispatch('fetchKeywordAnalysis', keyword.id));
+  }
+};
+
+const refreshAnalysis = (keyword) =>
+  withPendingId(keyword.id, () => store.dispatch('analyzeKeyword', keyword.id));
+
+const tagLabel = (tag) => ({
+  meta_description: 'Meta description',
+  img_alt: 'Image alt',
+  url: 'URL',
+}[tag] || String(tag || '').toUpperCase());
 
 onMounted(() =>
   Promise.all([
@@ -383,56 +409,185 @@ onMounted(() =>
             <article
               v-for="keyword in filteredTrackedKeywords"
               :key="keyword.id"
-              class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_150px_130px_110px] lg:items-center"
+              class="p-5"
             >
-              <div class="min-w-0">
-                <p class="text-sm font-bold text-slate-950 dark:text-white">{{ keyword.term }}</p>
-                <router-link
-                  v-if="keyword.source"
-                  :to="{ name: 'snapshot-item', params: { id: keyword.source.snapshotId } }"
-                  class="mt-1 inline-flex max-w-full items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+              <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_150px_130px_110px] lg:items-center">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-slate-950 dark:text-white">{{ keyword.term }}</p>
+                  <router-link
+                    v-if="keyword.source"
+                    :to="{ name: 'snapshot-item', params: { id: keyword.source.snapshotId } }"
+                    class="mt-1 inline-flex max-w-full items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                  >
+                    <span class="truncate">{{ keyword.source.title || keyword.source.url || 'Source snapshot' }}</span>
+                    <ArrowRightIcon class="size-3.5 shrink-0" />
+                  </router-link>
+                  <p v-else class="mt-1 text-xs text-slate-400 dark:text-slate-500">Added manually</p>
+
+                  <div v-if="keyword.assessment" class="mt-3 flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+                      Placement {{ keyword.assessment.placementScore }}/100
+                    </span>
+                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                      Content {{ keyword.assessment.contentQualityScore }}/100
+                    </span>
+                    <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                      {{ keyword.assessment.totalOccurrences }} occurrence{{ keyword.assessment.totalOccurrences === 1 ? '' : 's' }}
+                    </span>
+                  </div>
+
+                  <button
+                    v-if="keyword.source"
+                    type="button"
+                    class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                    @click="toggleAnalysis(keyword)"
+                  >
+                    {{ expandedKeywordId === keyword.id ? 'Hide analysis' : 'View tag analysis' }}
+                    <ChevronDownIcon :class="['size-4 transition-transform', expandedKeywordId === keyword.id && 'rotate-180']" />
+                  </button>
+                </div>
+
+                <select
+                  :value="keyword.status"
+                  :disabled="isIdPending(keyword.id)"
+                  aria-label="Keyword status"
+                  class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  @change="updateTrackedKeyword(keyword, { status: $event.target.value })"
                 >
-                  <span class="truncate">{{ keyword.source.title || keyword.source.url || 'Source snapshot' }}</span>
-                  <ArrowRightIcon class="size-3.5 shrink-0" />
-                </router-link>
-                <p v-else class="mt-1 text-xs text-slate-400 dark:text-slate-500">Added manually</p>
+                  <option value="planned">Planned</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="paused">Paused</option>
+                </select>
+
+                <select
+                  :value="keyword.priority"
+                  :disabled="isIdPending(keyword.id)"
+                  aria-label="Keyword priority"
+                  class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  @change="updateTrackedKeyword(keyword, { priority: $event.target.value })"
+                >
+                  <option value="low">Low priority</option>
+                  <option value="medium">Medium priority</option>
+                  <option value="high">High priority</option>
+                </select>
+
+                <button
+                  type="button"
+                  :disabled="isIdPending(keyword.id)"
+                  class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 text-xs font-bold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                  :aria-label="`Remove ${keyword.term}`"
+                  @click="removeTrackedKeyword(keyword)"
+                >
+                  <TrashIcon class="size-4" />
+                  Remove
+                </button>
               </div>
 
-              <select
-                :value="keyword.status"
-                :disabled="isIdPending(keyword.id)"
-                aria-label="Keyword status"
-                class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                @change="updateTrackedKeyword(keyword, { status: $event.target.value })"
+              <section
+                v-if="expandedKeywordId === keyword.id"
+                class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60"
               >
-                <option value="planned">Planned</option>
-                <option value="in_progress">In progress</option>
-                <option value="completed">Completed</option>
-                <option value="paused">Paused</option>
-              </select>
+                <div v-if="isIdPending(keyword.id) && !analysisFor(keyword.id)" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                  Loading tag evidence…
+                </div>
 
-              <select
-                :value="keyword.priority"
-                :disabled="isIdPending(keyword.id)"
-                aria-label="Keyword priority"
-                class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                @change="updateTrackedKeyword(keyword, { priority: $event.target.value })"
-              >
-                <option value="low">Low priority</option>
-                <option value="medium">Medium priority</option>
-                <option value="high">High priority</option>
-              </select>
+                <div v-else-if="analysisFor(keyword.id)?.coverageStatus === 'requires_rescan'" class="py-5 text-center">
+                  <CameraIcon class="mx-auto size-8 text-amber-500" />
+                  <p class="mt-3 text-sm font-bold text-slate-900 dark:text-white">This snapshot needs to be rescanned</p>
+                  <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    It was created before Kumo began storing tag-level evidence. Run a new snapshot for this page, then track the keyword from that result.
+                  </p>
+                </div>
 
-              <button
-                type="button"
-                :disabled="isIdPending(keyword.id)"
-                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 text-xs font-bold text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
-                :aria-label="`Remove ${keyword.term}`"
-                @click="removeTrackedKeyword(keyword)"
-              >
-                <TrashIcon class="size-4" />
-                Remove
-              </button>
+                <div v-else-if="analysisFor(keyword.id)">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p class="text-sm font-bold text-slate-950 dark:text-white">On-page evidence</p>
+                      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Algorithm {{ analysisFor(keyword.id).algorithmVersion }} · not a Google ranking position
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      :disabled="isIdPending(keyword.id)"
+                      class="inline-flex items-center gap-2 text-xs font-bold text-indigo-600 disabled:opacity-40 dark:text-indigo-400"
+                      @click="refreshAnalysis(keyword)"
+                    >
+                      <ArrowPathIcon class="size-4" />
+                      Recalculate
+                    </button>
+                  </div>
+
+                  <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Placement</p>
+                      <p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">{{ analysisFor(keyword.id).placementScore }}/100</p>
+                    </div>
+                    <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Content quality</p>
+                      <p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">{{ analysisFor(keyword.id).contentQualityScore }}/100</p>
+                    </div>
+                    <div class="rounded-xl bg-white p-3 dark:bg-slate-900">
+                      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Combined</p>
+                      <p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">{{ analysisFor(keyword.id).overallScore }}/100</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 grid gap-3 md:grid-cols-2">
+                    <article
+                      v-for="(score, tag) in analysisFor(keyword.id).tagScores"
+                      :key="tag"
+                      class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ tagLabel(tag) }}</p>
+                        <span :class="['text-[11px] font-bold', score.found ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400']">
+                          {{ score.found ? `${score.occurrences} found` : 'Not found' }}
+                        </span>
+                      </div>
+                      <p class="mt-1 text-[11px] text-slate-400">
+                        Placement weight {{ score.placementWeight }} · Quality {{ score.qualityScore ?? '—' }}
+                      </p>
+                    </article>
+                  </div>
+
+                  <div v-if="analysisFor(keyword.id).occurrences?.length" class="mt-5">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Captured occurrences</p>
+                    <div class="mt-2 space-y-2">
+                      <div
+                        v-for="(occurrence, index) in analysisFor(keyword.id).occurrences"
+                        :key="`${occurrence.tag}-${index}`"
+                        class="rounded-xl bg-white p-3 dark:bg-slate-900"
+                      >
+                        <div class="flex items-center justify-between gap-3">
+                          <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">{{ tagLabel(occurrence.tag) }}</span>
+                          <span class="text-[11px] text-slate-400">Quality {{ occurrence.qualityScore }}/100</span>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300">{{ occurrence.excerpt }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="analysisFor(keyword.id).findings?.length" class="mt-5">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Findings</p>
+                    <ul class="mt-2 space-y-2">
+                      <li
+                        v-for="(finding, index) in analysisFor(keyword.id).findings"
+                        :key="index"
+                        class="rounded-xl bg-white px-3 py-2 text-xs leading-5 text-slate-600 dark:bg-slate-900 dark:text-slate-300"
+                      >
+                        <strong v-if="finding.tag">{{ tagLabel(finding.tag) }}:</strong>
+                        {{ finding.message }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div v-else class="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                  No analysis is available for this keyword.
+                </div>
+              </section>
             </article>
           </div>
 
