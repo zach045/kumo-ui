@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import {
     ArrowRightIcon,
     ChartBarSquareIcon,
@@ -20,6 +21,7 @@ const isSubmitting = ref(false);
 const registrationError = ref('');
 
 const store = useStore();
+const router = useRouter();
 const fullName = computed(() => [firstName.value.trim(), lastName.value.trim()].filter(Boolean).join(' '));
 
 async function register() {
@@ -42,7 +44,10 @@ async function register() {
         if (!result?.success) {
             registrationError.value = result?.error
                 || 'We couldn’t create your account. Please check your information and try again.';
+            return;
         }
+
+        await router.push('/dashboard');
     } catch (error) {
         registrationError.value = 'We couldn’t create your account. Please try again.';
     } finally {
