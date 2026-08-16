@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
+import { useTheme } from '../../composables/useTheme';
 import {
   Bars3Icon,
   XMarkIcon,
@@ -11,11 +12,14 @@ import {
   ClockIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
+  MoonIcon,
+  SunIcon,
 } from '@heroicons/vue/24/outline';
 
 const isOpen = ref(false);
 const store = useStore();
 const user = computed(() => store.getters.getUser);
+const { isDark, themeLabel, toggleTheme } = useTheme();
 
 const routes = [
   { title: 'Overview', name: 'dashboard', icon: ChartBarSquareIcon },
@@ -34,18 +38,22 @@ const signOut = async () => {
 </script>
 
 <template>
-  <header class="relative z-40 w-full border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur">
+  <header class="relative z-40 w-full border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
     <div class="flex items-center justify-between">
       <router-link :to="{ name: 'dashboard' }" class="flex items-center gap-3" @click="closeMenu">
         <span class="flex size-9 items-center justify-center rounded-xl bg-indigo-600 font-black text-white">K</span>
-        <span class="font-bold tracking-tight text-slate-950">Kumo</span>
+        <span class="font-bold tracking-tight text-slate-950 dark:text-white">Kumo</span>
       </router-link>
 
       <div class="flex items-center gap-3">
-        <span v-if="user?.name" class="hidden text-sm font-medium text-slate-500 sm:block">{{ user.name }}</span>
+        <span v-if="user?.name" class="hidden text-sm font-medium text-slate-500 dark:text-slate-300 sm:block">{{ user.name }}</span>
+        <button type="button" class="flex size-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300" :aria-label="themeLabel" @click="toggleTheme">
+          <SunIcon v-if="isDark" class="size-5" />
+          <MoonIcon v-else class="size-5" />
+        </button>
         <button
           type="button"
-          class="flex size-10 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100"
+          class="flex size-10 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
           :aria-expanded="isOpen"
           aria-label="Toggle dashboard navigation"
           @click="isOpen = !isOpen"
@@ -56,14 +64,14 @@ const signOut = async () => {
       </div>
     </div>
 
-    <nav v-if="isOpen" class="absolute left-0 top-full w-full border-b border-slate-200 bg-white p-4 shadow-xl">
+    <nav v-if="isOpen" class="absolute left-0 top-full w-full border-b border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-950">
       <div class="grid gap-1">
         <router-link
           v-for="route in routes"
           :key="route.name"
           :to="{ name: route.name }"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-indigo-700"
-          active-class="bg-indigo-50 text-indigo-700"
+          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-indigo-300"
+          active-class="bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300"
           @click="closeMenu"
         >
           <component :is="route.icon" class="size-5" />
@@ -72,7 +80,7 @@ const signOut = async () => {
 
         <button
           type="button"
-          class="mt-3 flex items-center gap-3 border-t border-slate-100 px-4 pt-4 text-sm font-semibold text-slate-500"
+          class="mt-3 flex items-center gap-3 border-t border-slate-100 px-4 pt-4 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:text-slate-400"
           @click="signOut"
         >
           <ArrowRightOnRectangleIcon class="size-5" />
