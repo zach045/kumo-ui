@@ -48,6 +48,8 @@ test('keywords workspace separates opportunities from tracked records', async ()
   assert.match(source, /Add keyword/);
   assert.match(source, /Keyword status/);
   assert.match(source, /Keyword priority/);
+  assert.match(source, />\s*Remove\s*</);
+  assert.match(source, /removeTrackedKeyword\(keyword\)/);
 });
 
 test('keywords workspace does not present unsupported SEO metrics', async () => {
