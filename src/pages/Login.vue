@@ -43,9 +43,7 @@ async function login() {
             return;
         }
 
-        const token = localStorage.getItem('token');
-
-        if (isAuthenticated.value && token) {
+        if (isAuthenticated.value) {
             await router.push('/dashboard');
             return;
         }
