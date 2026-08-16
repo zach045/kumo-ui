@@ -90,6 +90,10 @@ test('older snapshots communicate the required rescan state', async () => {
   const source = await readSource('../src/pages/Keywords.vue');
 
   assert.match(source, /coverageStatus === 'requires_rescan'/);
+  assert.match(source, /Rescan required/);
   assert.match(source, /needs to be rescanned/);
-  assert.match(source, /Run a new snapshot/);
+  assert.match(source, /rescanKeywordSource\(keyword\)/);
+  assert.match(source, /dispatch\('analyzeSite'/);
+  assert.match(source, /Rescan page/);
+  assert.match(source, /fetchKeywordAnalysis/);
 });
