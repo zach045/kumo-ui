@@ -11,6 +11,12 @@ export default {
   },
   REMOVE_KEYWORD(state, id) {
     state.keywords = state.keywords.filter((keyword) => keyword.id !== id);
+    const analyses = { ...state.analyses };
+    delete analyses[id];
+    state.analyses = analyses;
+  },
+  SET_KEYWORD_ANALYSIS(state, { id, analysis }) {
+    state.analyses = { ...state.analyses, [id]: analysis };
   },
   SET_KEYWORDS_LOADING(state, value) {
     state.isLoading = value;

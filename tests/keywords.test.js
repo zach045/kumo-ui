@@ -67,3 +67,33 @@ test('keywords workspace supports filtering, API errors, and dark mode', async (
   assert.match(source, /role="alert"/);
   assert.match(source, /dark:bg-slate-900/);
 });
+
+
+test('keyword tag analysis is fetched and displayed without claiming SERP rank', async () => {
+  const [page, actions, mutations] = await Promise.all([
+    readSource('../src/pages/Keywords.vue'),
+    readSource('../src/store/modules/keywords/actions.js'),
+    readSource('../src/store/modules/keywords/mutations.js'),
+  ]);
+
+  assert.match(actions, /api\.get\(\`\/keywords\/\$\{id\}\/analysis\`\)/);
+  assert.match(actions, /api\.post\(\`\/keywords\/\$\{id\}\/analyze\`\)/);
+  assert.match(mutations, /SET_KEYWORD_ANALYSIS/);
+  assert.match(page, /View tag analysis/);
+  assert.match(page, /Placement/);
+  assert.match(page, /Content quality/);
+  assert.match(page, /Captured occurrences/);
+  assert.match(page, /not a Google ranking position/);
+});
+
+test('older snapshots communicate the required rescan state', async () => {
+  const source = await readSource('../src/pages/Keywords.vue');
+
+  assert.match(source, /coverageStatus === 'requires_rescan'/);
+  assert.match(source, /Rescan required/);
+  assert.match(source, /needs to be rescanned/);
+  assert.match(source, /rescanKeywordSource\(keyword\)/);
+  assert.match(source, /dispatch\('analyzeSite'/);
+  assert.match(source, /Rescan page/);
+  assert.match(source, /fetchKeywordAnalysis/);
+});
