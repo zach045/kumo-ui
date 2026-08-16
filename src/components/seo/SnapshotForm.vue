@@ -11,14 +11,14 @@ defineEmits(['analyze']);
 <template>
   <form class="mt-7 space-y-5" @submit.prevent="$emit('analyze')">
     <div v-for="field in fields" :key="field.key">
-      <label :for="field.key" class="text-sm font-bold text-slate-700">{{ field.label }}</label>
+      <label :for="field.key" class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ field.label }}</label>
       <input
         :id="field.key"
         v-model="form[field.key]"
         :type="field.type"
         :placeholder="field.placeholder"
         :required="field.key === 'url'"
-        class="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+        class="mt-2 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 text-sm text-slate-900 dark:text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
       />
     </div>
 
