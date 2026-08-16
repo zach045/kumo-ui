@@ -1,38 +1,33 @@
 <script setup>
-import { XMarkIcon } from '@heroicons/vue/24/solid';
+defineProps({
+  form: { type: Object, required: true },
+  fields: { type: Array, required: true },
+  isLoading: { type: Boolean, default: false },
+});
 
+defineEmits(['analyze']);
 </script>
 
 <template>
-    <form @submit.prevent="handleAnalyze" class="mt-2 flex flex-col flex-wrap rounded-md text-left w-full justify-center" v-if="!site && !isLoading">
-        <div v-for="(field, index) in fields" :key="index" class="flex flex-col flex-wrap mb-4">
-            <label :for="field.key" class="font-light">{{ field.label }}</label>
-            <input
-                :type="field.type"
-                :id="field.key"
-                :placeholder="field.placeholder"
-                class="rounded-md p-2 mt-2 border-b border-blue-400"
-                v-model="form[field.key]"
-            />
-        </div>
-        <base-button class="max-w-24 mt-8" :disabled="!form.url">Generate</base-button>
-    </form>
-</template>
+  <form class="mt-7 space-y-5" @submit.prevent="$emit('analyze')">
+    <div v-for="field in fields" :key="field.key">
+      <label :for="field.key" class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ field.label }}</label>
+      <input
+        :id="field.key"
+        v-model="form[field.key]"
+        :type="field.type"
+        :placeholder="field.placeholder"
+        :required="field.key === 'url'"
+        class="mt-2 h-12 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-4 text-sm text-slate-900 dark:text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+      />
+    </div>
 
-<script>
-export default {
-  props: {
-    form: Object,
-    fields: Array
-  },
-  emits: ['analyze', 'closeForm'],
-  methods: {
-    handleAnalyze() {
-      this.$emit('analyze');
-    },
-    handleCloseForm() {
-      this.$emit('closeForm');
-    }
-  }
-}
-</script>
+    <button
+      type="submit"
+      :disabled="!form.url || isLoading"
+      class="inline-flex h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {{ isLoading ? 'Analyzing website…' : 'Generate snapshot' }}
+    </button>
+  </form>
+</template>

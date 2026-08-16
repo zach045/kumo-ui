@@ -2,9 +2,8 @@ name: Frontend checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, kumo-001]
   push:
-    branches: [kumo-001]
 
 permissions:
   contents: read
