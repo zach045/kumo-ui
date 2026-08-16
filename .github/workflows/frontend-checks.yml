@@ -20,8 +20,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Dependency audit report
-        continue-on-error: true
-        run: npm audit --omit=dev
+      - name: Block high-severity dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
       - run: npm test
       - run: npm run build
